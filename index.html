@@ -716,7 +716,9 @@ async function saveEntry() {
     document.getElementById('add-desc').value = '';
     document.getElementById('photo-preview').style.display = 'none';
     photoBase64 = '';
-    loadHome();
+    await loadHome();
+    if (document.getElementById('page-chart').classList.contains('active')) renderChart();
+    if (document.getElementById('page-budget').classList.contains('active')) renderBudget();
   } catch(e) {
     showToast('儲存失敗，請重試', false);
   }
@@ -752,6 +754,19 @@ function loadAll() { loadHome(); }
 document.getElementById('month-display').textContent = monthLabel(currentMonth);
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) closeModals(); }));
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+let pullStartY = 0;
+let pulling = false;
+const txScroll = document.getElementById('tx-list');
+txScroll.addEventListener('touchstart', e => { if(txScroll.scrollTop === 0) { pullStartY = e.touches[0].clientY; pulling = true; } });
+txScroll.addEventListener('touchend', e => {
+  if (pulling && e.changedTouches[0].clientY - pullStartY > 60) {
+    showToast('🔄 刷新中...');
+    loadHome();
+  }
+  pulling = false;
+});
+
 loadHome();
 </script>
 </body>
