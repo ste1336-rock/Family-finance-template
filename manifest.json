@@ -1,8 +1,9 @@
 {
   "name": "家庭帳本 Family Budget",
   "short_name": "帳本",
-  "description": "Jerry & Wife 家庭收支管理",
-  "start_url": "/index.html",
+  "description": "Jerry & Jena 家庭收支管理",
+  "start_url": "https://ste1336-rock.github.io/Family-finance-template/index.html",
+  "scope": "https://ste1336-rock.github.io/Family-finance-template/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#534AB7",
