@@ -184,7 +184,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;backg
         </div>
         <div class="month-picker">
           <i class="ti ti-chevron-left" onclick="changeMonth(-1)"></i>
-          <span id="month-display"></span>
+          <span id="month-display" onclick="showYearPicker()" style="cursor:pointer;user-select:none"></span>
           <i class="ti ti-chevron-right" onclick="changeMonth(1)"></i>
         </div>
       </div>
@@ -374,6 +374,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;backg
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- YEAR PICKER MODAL -->
+<div class="modal-bg" id="year-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">選擇年份 Select Year</div>
+    <div id="year-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px"></div>
+    <button class="save-btn" onclick="closeModals()">取消 Cancel</button>
+  </div>
+</div>
+
 <script>
 // ============ CONFIG ============
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLYXaG1I2NhILKpK4P4jmYabukDZkMc1DjpuvM15VGJCSWFE53_Zvy7bPX4mpxgLEB/exec';
@@ -421,6 +431,28 @@ function changeMonth(d) {
   const dt = new Date(y, m - 1 + d, 1);
   currentMonth = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0');
   document.getElementById('month-display').textContent = monthLabel(currentMonth);
+  loadHome();
+}
+
+function showYearPicker() {
+  const curYear = parseInt(currentMonth.split('-')[0]);
+  const curMonth = currentMonth.split('-')[1];
+  const startYear = 2024;
+  const endYear = curYear + 3;
+  let html = '';
+  for (let y = endYear; y >= startYear; y--) {
+    const isActive = y === curYear;
+    html += `<button onclick="selectYear(${y})" style="padding:12px;border-radius:10px;border:1.5px solid ${isActive ? 'var(--purple)' : 'var(--border)'};background:${isActive ? 'var(--purple-light)' : 'transparent'};color:${isActive ? 'var(--purple)' : 'var(--text)'};font-size:16px;font-weight:${isActive ? '600' : '400'};cursor:pointer">${y}</button>`;
+  }
+  document.getElementById('year-grid').innerHTML = html;
+  document.getElementById('year-modal').classList.add('open');
+}
+
+function selectYear(year) {
+  const curMonth = currentMonth.split('-')[1];
+  currentMonth = year + '-' + curMonth;
+  document.getElementById('month-display').textContent = monthLabel(currentMonth);
+  closeModals();
   loadHome();
 }
 
