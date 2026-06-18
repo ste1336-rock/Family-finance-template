@@ -374,6 +374,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;backg
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- KEY SETUP MODAL -->
+<div class="modal-bg" id="key-modal" style="display:flex">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔐 設定存取密碼</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">請輸入你的 Secret Key，只需設定一次</p>
+    <input class="text-input" id="key-input" type="password" placeholder="輸入 Secret Key">
+    <button class="save-btn" onclick="saveKey()">確認 Confirm</button>
+  </div>
+</div>
+
 <!-- YEAR PICKER MODAL -->
 <div class="modal-bg" id="year-modal">
   <div class="modal">
@@ -388,7 +399,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;backg
 // ============ CONFIG ============
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLYXaG1I2NhILKpK4P4jmYabukDZkMc1DjpuvM15VGJCSWFE53_Zvy7bPX4mpxgLEB/exec';
 // 請將下方 YOUR_SECRET_KEY 換成你設定的 key
-const SECRET_KEY = 'Jerrylovejena0804';
+let SECRET_KEY = localStorage.getItem('app_secret_key') || '';
 
 // ============ STATE ============
 let currentMonth = new Date().toISOString().slice(0,7); // YYYY-MM
@@ -431,6 +442,26 @@ function changeMonth(d) {
   const dt = new Date(y, m - 1 + d, 1);
   currentMonth = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0');
   document.getElementById('month-display').textContent = monthLabel(currentMonth);
+
+function saveKey() {
+  const k = document.getElementById('key-input').value.trim();
+  if (!k) { showToast('請輸入 Secret Key', false); return; }
+  SECRET_KEY = k;
+  localStorage.setItem('app_secret_key', k);
+  document.getElementById('key-modal').style.display = 'none';
+  loadHome();
+}
+
+function checkKey() {
+  const k = localStorage.getItem('app_secret_key');
+  if (!k) {
+    document.getElementById('key-modal').style.display = 'flex';
+  } else {
+    SECRET_KEY = k;
+    document.getElementById('key-modal').style.display = 'none';
+    loadHome();
+  }
+}
   loadHome();
 }
 
@@ -468,6 +499,26 @@ function showMonthPicker(year) {
 function selectYearMonth(year, month) {
   currentMonth = year + '-' + String(month).padStart(2,'0');
   document.getElementById('month-display').textContent = monthLabel(currentMonth);
+
+function saveKey() {
+  const k = document.getElementById('key-input').value.trim();
+  if (!k) { showToast('請輸入 Secret Key', false); return; }
+  SECRET_KEY = k;
+  localStorage.setItem('app_secret_key', k);
+  document.getElementById('key-modal').style.display = 'none';
+  loadHome();
+}
+
+function checkKey() {
+  const k = localStorage.getItem('app_secret_key');
+  if (!k) {
+    document.getElementById('key-modal').style.display = 'flex';
+  } else {
+    SECRET_KEY = k;
+    document.getElementById('key-modal').style.display = 'none';
+    loadHome();
+  }
+}
   closeModals();
   loadHome();
 }
@@ -812,6 +863,26 @@ async function saveBudget() {
 // ============ INIT ============
 function loadAll() { loadHome(); }
 document.getElementById('month-display').textContent = monthLabel(currentMonth);
+
+function saveKey() {
+  const k = document.getElementById('key-input').value.trim();
+  if (!k) { showToast('請輸入 Secret Key', false); return; }
+  SECRET_KEY = k;
+  localStorage.setItem('app_secret_key', k);
+  document.getElementById('key-modal').style.display = 'none';
+  loadHome();
+}
+
+function checkKey() {
+  const k = localStorage.getItem('app_secret_key');
+  if (!k) {
+    document.getElementById('key-modal').style.display = 'flex';
+  } else {
+    SECRET_KEY = k;
+    document.getElementById('key-modal').style.display = 'none';
+    loadHome();
+  }
+}
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) closeModals(); }));
 // SW disabled
 
@@ -827,7 +898,7 @@ txScroll.addEventListener('touchend', e => {
   pulling = false;
 });
 
-loadHome();
+checkKey();
 </script>
 </body>
 </html>
