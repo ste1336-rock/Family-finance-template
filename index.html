@@ -450,16 +450,19 @@ function showYearPicker() {
 
 function showMonthPicker(year) {
   const curMonth = parseInt(currentMonth.split('-')[1]);
+  const curYear = parseInt(currentMonth.split('-')[0]);
   const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  let html = '';
+  let html = '<button onclick="showYearPicker()" style="grid-column:1/-1;padding:8px;border-radius:8px;border:1px solid #ccc;background:transparent;color:#666;font-size:13px;cursor:pointer;margin-bottom:4px">← 返回年份</button>';
   months.forEach((m, i) => {
-    const isActive = year === parseInt(currentMonth.split('-')[0]) && (i+1) === curMonth;
-    html += `<button onclick="selectYearMonth(${year}, ${i+1})" style="padding:12px;border-radius:10px;border:1.5px solid ${isActive ? 'var(--purple)' : 'var(--border)'};background:${isActive ? 'var(--purple-light)' : 'transparent'};color:${isActive ? 'var(--purple)' : 'var(--text)'};font-size:15px;font-weight:${isActive ? '600' : '400'};cursor:pointer">${m}</button>`;
+    const isActive = year === curYear && (i+1) === curMonth;
+    const bg = isActive ? '#EEEDFE' : '#fff';
+    const color = isActive ? '#534AB7' : '#1a1a1a';
+    const border = isActive ? '#534AB7' : '#ddd';
+    const weight = isActive ? '600' : '400';
+    html += '<button onclick="selectYearMonth(' + year + ',' + (i+1) + ')" style="padding:12px;border-radius:10px;border:1.5px solid ' + border + ';background:' + bg + ';color:' + color + ';font-size:15px;font-weight:' + weight + ';cursor:pointer">' + m + '</button>';
   });
-  document.getElementById('year-grid').innerHTML = `
-    <button onclick="showYearPicker()" style="grid-column:1/-1;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:4px">← 返回年份</button>
-    ${html}`;
-  document.getElementById('year-modal-title').textContent = `${year}年 選擇月份`;
+  document.getElementById('year-grid').innerHTML = html;
+  document.getElementById('year-modal-title').textContent = year + '年 選擇月份';
 }
 
 function selectYearMonth(year, month) {
