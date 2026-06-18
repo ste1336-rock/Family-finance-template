@@ -427,12 +427,19 @@ function changeMonth(d) {
 // ============ API ============
 async function apiGet(params) {
   const q = new URLSearchParams({ ...params, key: SECRET_KEY });
-  const r = await fetch(API_URL + '?' + q);
+  const r = await fetch(API_URL + '?' + q, {
+    method: 'GET',
+    redirect: 'follow',
+    mode: 'cors',
+  });
   return r.json();
 }
 async function apiPost(body) {
   const r = await fetch(API_URL, {
     method: 'POST',
+    redirect: 'follow',
+    mode: 'cors',
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ ...body, key: SECRET_KEY })
   });
   return r.json();
@@ -753,7 +760,7 @@ async function saveBudget() {
 function loadAll() { loadHome(); }
 document.getElementById('month-display').textContent = monthLabel(currentMonth);
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) closeModals(); }));
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(regs => { regs.forEach(r => r.unregister()); }); }
 
 let pullStartY = 0;
 let pulling = false;
