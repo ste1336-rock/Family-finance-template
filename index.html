@@ -760,7 +760,7 @@ async function saveBudget() {
 function loadAll() { loadHome(); }
 document.getElementById('month-display').textContent = monthLabel(currentMonth);
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) closeModals(); }));
-if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(regs => { regs.forEach(r => r.unregister()); }); }
+// SW disabled
 
 let pullStartY = 0;
 let pulling = false;
