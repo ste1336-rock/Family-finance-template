@@ -325,6 +325,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;backg
     <input class="amount-field" id="add-amount" type="number" placeholder="₫ 0" inputmode="numeric">
     <div class="field-label">說明 Description</div>
     <input class="text-input" id="add-desc" type="text" placeholder="例：午餐、超市購物...">
+    <div class="field-label">日期 Date</div>
+    <input class="text-input" id="add-date" type="date" style="margin-bottom:14px">
     <div class="field-label">類別 Category</div>
     <div class="cat-grid">
       <button class="cat-btn sel" data-cat="餐飲" onclick="selectCat(this)"><i class="ti ti-tools-kitchen-2"></i><span>餐飲</span></button>
@@ -442,33 +444,14 @@ function changeMonth(d) {
   const dt = new Date(y, m - 1 + d, 1);
   currentMonth = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0');
   document.getElementById('month-display').textContent = monthLabel(currentMonth);
-
-function saveKey() {
-  const k = document.getElementById('key-input').value.trim();
-  if (!k) { showToast('請輸入 Secret Key', false); return; }
-  SECRET_KEY = k;
-  localStorage.setItem('app_secret_key', k);
-  document.getElementById('key-modal').style.display = 'none';
-  loadHome();
-}
-
-function checkKey() {
-  const k = localStorage.getItem('app_secret_key');
-  if (!k) {
-    document.getElementById('key-modal').style.display = 'flex';
-  } else {
-    SECRET_KEY = k;
-    document.getElementById('key-modal').style.display = 'none';
-    loadHome();
-  }
-}
   loadHome();
 }
 
 function showYearPicker() {
   const curYear = parseInt(currentMonth.split('-')[0]);
-  const startYear = 2026;
-  const endYear = curYear + 10;
+  const APP_START_YEAR = 2026;
+  const startYear = Math.min(APP_START_YEAR, curYear);
+  const endYear = curYear + 2;
   let html = '';
   for (let y = endYear; y >= startYear; y--) {
     const isActive = y === curYear;
@@ -499,26 +482,6 @@ function showMonthPicker(year) {
 function selectYearMonth(year, month) {
   currentMonth = year + '-' + String(month).padStart(2,'0');
   document.getElementById('month-display').textContent = monthLabel(currentMonth);
-
-function saveKey() {
-  const k = document.getElementById('key-input').value.trim();
-  if (!k) { showToast('請輸入 Secret Key', false); return; }
-  SECRET_KEY = k;
-  localStorage.setItem('app_secret_key', k);
-  document.getElementById('key-modal').style.display = 'none';
-  loadHome();
-}
-
-function checkKey() {
-  const k = localStorage.getItem('app_secret_key');
-  if (!k) {
-    document.getElementById('key-modal').style.display = 'flex';
-  } else {
-    SECRET_KEY = k;
-    document.getElementById('key-modal').style.display = 'none';
-    loadHome();
-  }
-}
   closeModals();
   loadHome();
 }
@@ -629,19 +592,17 @@ function renderTxList(txs) {
 async function renderChart() {
   document.getElementById('chart-content').innerHTML = '<div class="loading"><i class="ti ti-refresh"></i></div>';
   try {
-    const txRes = await apiGet({ action: 'getTransactions' });
-    const txs = txRes.data || [];
     const months = [];
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(); d.setMonth(d.getMonth() - i);
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
       months.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
     }
-    const monthData = months.map(m => {
-      const mtxs = txs.filter(t => t.date && t.date.toString().startsWith(m));
-      const income = mtxs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
-      const expense = mtxs.filter(t=>t.type!=='income').reduce((s,t)=>s+Number(t.amount),0);
-      return { m, income, expense };
-    });
+    const summaries = await Promise.all(months.map(m => apiGet({ action: 'getSummary', month: m })));
+    const monthData = months.map((m, i) => ({
+      m,
+      income: summaries[i].income || 0,
+      expense: summaries[i].expense || 0
+    }));
     const maxVal = Math.max(...monthData.map(d => Math.max(d.income, d.expense)), 1);
     const barHTML = monthData.map(d => {
       const ih = Math.round(d.income / maxVal * 90);
@@ -654,8 +615,8 @@ async function renderChart() {
       </div>`;
     }).join('');
 
-    // Current month breakdown
-    const curTxs = txs.filter(t => t.date && t.date.toString().startsWith(currentMonth) && t.type !== 'income');
+    // Pie chart: use cached current month transactions (already loaded on home)
+    const curTxs = allTransactions.filter(t => t.type !== 'income');
     const catMap = {};
     curTxs.forEach(t => { catMap[t.category] = (catMap[t.category]||0) + Number(t.amount); });
     const total = Object.values(catMap).reduce((s,v)=>s+v,0) || 1;
@@ -663,22 +624,22 @@ async function renderChart() {
     const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
     let offset = 0;
     const circumference = 2 * Math.PI * 32;
-    const pieSlices = cats.map((([cat, val], i) => {
+    const pieSlices = cats.map(([cat, val], i) => {
       const pct = val / total;
       const dash = pct * circumference;
       const slice = `<circle cx="45" cy="45" r="32" fill="none" stroke="${colors[i%colors.length]}" stroke-width="14" stroke-dasharray="${dash} ${circumference-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 45 45)"/>`;
       offset += dash;
       return slice;
-    }));
+    });
     const legendHTML = cats.slice(0,5).map(([cat, val], i) => `
       <div class="pie-row">
         <div class="pie-label"><div class="pie-dot" style="background:${colors[i%colors.length]}"></div>${cat}</div>
         <div class="pie-pct">${Math.round(val/total*100)}%</div>
       </div>`).join('');
 
-    // Savings
-    const totalIncome = txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
-    const totalExpense = txs.filter(t=>t.type!=='income').reduce((s,t)=>s+Number(t.amount),0);
+    // Cumulative: sum of last 6 months
+    const totalIncome = monthData.reduce((s, d) => s + d.income, 0);
+    const totalExpense = monthData.reduce((s, d) => s + d.expense, 0);
     const savings = Math.max(totalIncome - totalExpense, 0);
 
     document.getElementById('chart-content').innerHTML = `
@@ -692,7 +653,7 @@ async function renderChart() {
       </div>
       <div class="card">
         <div class="card-title">本月支出分類 Expense Breakdown</div>
-        ${total > 0 ? `<div class="donut-wrap">
+        ${curTxs.length > 0 ? `<div class="donut-wrap">
           <svg width="90" height="90" viewBox="0 0 90 90">
             <circle cx="45" cy="45" r="32" fill="none" stroke="#F1EFE8" stroke-width="14"/>
             ${pieSlices.join('')}
@@ -701,7 +662,7 @@ async function renderChart() {
         </div>` : '<div style="color:var(--text3);font-size:13px">本月尚無支出記錄</div>'}
       </div>
       <div class="card">
-        <div class="card-title">累計結餘 Total Savings</div>
+        <div class="card-title">近6個月結餘 6-Month Savings</div>
         <div class="savings-goal">
           <div style="font-size:22px;font-weight:700;color:var(--green);margin-bottom:4px">${fmt(savings)}</div>
           <div style="font-size:12px;color:var(--text3)">總收入 ${fmt(totalIncome)} · 總支出 ${fmt(totalExpense)}</div>
@@ -768,6 +729,7 @@ async function renderBudget() {
 // ============ ADD ENTRY ============
 function openAdd() {
   document.getElementById('add-modal').classList.add('open');
+  document.getElementById('add-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('add-amount').focus();
 }
 function closeModals() {
@@ -810,7 +772,7 @@ async function saveEntry() {
   btn.disabled = true;
   btn.textContent = '儲存中...';
   try {
-    const today = new Date().toISOString().slice(0,10);
+    const today = document.getElementById('add-date').value || new Date().toISOString().slice(0,10);
     await apiPost({
       action: 'addTransaction',
       date: today,
@@ -825,6 +787,7 @@ async function saveEntry() {
     closeModals();
     document.getElementById('add-amount').value = '';
     document.getElementById('add-desc').value = '';
+    document.getElementById('add-date').value = '';
     document.getElementById('photo-preview').style.display = 'none';
     photoBase64 = '';
     await loadHome();
@@ -862,6 +825,7 @@ async function saveBudget() {
 
 // ============ INIT ============
 function loadAll() { loadHome(); }
+function openLink(url) { window.open(url, '_blank'); }
 document.getElementById('month-display').textContent = monthLabel(currentMonth);
 
 function saveKey() {
